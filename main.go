@@ -37,13 +37,13 @@ func (r *myRegexp) FindStringSubmatchMap(s string) map[string]string {
 }
 
 func cmd(cmd string, path string) {
-	command := exec.Command(cmd)
+	command := exec.Command("bash", "-c", cmd)
 	command.Dir = path
 	out, err := command.Output()
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("Produced: " + string(out))
+	fmt.Println(string(out))
 }
 
 func main() {
@@ -68,9 +68,22 @@ func main() {
 	for scanner.Scan() {
 		data := myExp.FindStringSubmatchMap(scanner.Text())
 		if len(data) > 0 {
-			command := fmt.Sprintf("git -C \"%s\" %s", data["path"], args)
-			fmt.Printf("Checking git status of %s with the git command 'git %s'\n", data["name"], args)
-			cmd(command, dir)
+			localDir := dir
+			localPath := data["path"]
+
+			dirFolders := strings.Split(localDir, "/")
+			pathFolders := strings.Split(localPath, "/")
+			for _, folder := range pathFolders {
+				if folder == ".." {
+					dirFolders = dirFolders[:len(dirFolders)-1]
+				} else {
+					dirFolders = append(dirFolders, folder)
+				}
+			}
+
+			command := fmt.Sprintf("git -c color.status=always -c color.ui=always %s", args)
+			fmt.Printf("Checking %s with the git command 'git %s'\n", data["name"], args)
+			cmd(command, fmt.Sprintf("%s/", strings.Join(dirFolders[:], "/")))
 		}
 	}
 
