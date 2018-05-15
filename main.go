@@ -49,10 +49,16 @@ func main() {
 	argsWithoutProg := os.Args[1:]
 
 	filter := ""
+	skipSelf := false
 	for index, arg := range argsWithoutProg {
 		if arg == "--filter" {
 			filter = argsWithoutProg[index + 1]
 			argsWithoutProg = append(argsWithoutProg[:index], argsWithoutProg[index+2:]...)
+		}
+
+		if arg == "--skipself" {
+			skipSelf = true
+			argsWithoutProg = append(argsWithoutProg[:index], argsWithoutProg[index+1:]...)
 		}
 	}
 
@@ -63,6 +69,12 @@ func main() {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	if !skipSelf {
+		command_self := fmt.Sprintf("git -c color.status=always -c color.ui=always %s", args)
+		fmt.Printf("Running the git command 'git %s' in %s.\n", args, "this project")
+		cmd(command_self, dir)
 	}
 
 	file, err := os.Open(dir + "/Podfile")
@@ -100,7 +112,7 @@ func main() {
 			}
 
 			command := fmt.Sprintf("git -c color.status=always -c color.ui=always %s", args)
-			fmt.Printf("Checking %s with the git command 'git %s'\n", data["name"], args)
+			fmt.Printf("Running the git command 'git %s' in %s.\n", args, data["name"])
 			cmd(command, fmt.Sprintf("%s/", strings.Join(dirFolders[:], "/")))
 		}
 	}
