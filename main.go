@@ -26,7 +26,6 @@ func (r *myRegexp) FindStringSubmatchMap(s string) map[string]string {
 	}
 
 	for i, name := range r.SubexpNames() {
-		//
 		if i == 0 {
 			continue
 		}
@@ -49,6 +48,14 @@ func cmd(cmd string, path string) {
 func main() {
 	argsWithoutProg := os.Args[1:]
 
+	filter := ""
+	for index, arg := range argsWithoutProg {
+		if arg == "--filter" {
+			filter = argsWithoutProg[index + 1]
+			argsWithoutProg = append(argsWithoutProg[:index], argsWithoutProg[index+2:]...)
+		}
+	}
+
 	args := fmt.Sprintf("%s", argsWithoutProg)
 	args = strings.Replace(args, "[", "", -1)
 	args = strings.Replace(args, "]", "", -1)
@@ -68,6 +75,17 @@ func main() {
 	for scanner.Scan() {
 		data := myExp.FindStringSubmatchMap(scanner.Text())
 		if len(data) > 0 {
+
+			if filter != "" {
+				var filterRegex = myRegexp{regexp.MustCompile(filter)}
+				if len(filterRegex.FindStringSubmatch(strings.ToLower(data["name"]))) == 0 {
+					if len(filterRegex.FindStringSubmatch(strings.ToLower(data["path"]))) == 0 {
+						fmt.Printf("%s does not match the filter \"%s\", skipping.\n", data["name"], filter)
+						continue
+					}
+				}
+			}
+
 			localDir := dir
 			localPath := data["path"]
 
